@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kanban Board - Team Workspace</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <h1 class="board-brand">
+            <img src="logo.jpg" alt="Kanban Logo" class="header-logo">
+            <span id="boardTitle">KANBAN BOARD</span>
+        </h1>
+        <div class="header-actions">
+            <button class="btn" id="shareBtn">🔗 SHARE</button>
+            <button class="btn" id="settingsBtn">⚙️ SETTINGS</button>
+            <button class="btn btn-primary" id="addTaskGlobalBtn">➕ ADD TASK</button>
+        </div>
+    </div>
+
+    <!-- Metrics -->
+    <div class="metrics">
+        <div class="metric-card">
+            <div class="metric-label">Total Tasks</div>
+            <div class="metric-value" id="totalTasks">0</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">In Progress</div>
+            <div class="metric-value" id="inProgressCount">0</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Blocked</div>
+            <div class="metric-value" id="blockedCount">0</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Sprint Progress</div>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div style="font-size: 12px; margin-top: 4px; color: #666; font-weight: 600;">
+                <span id="completedCount">0</span> / <span id="totalTasksBottom">0</span> Done
+            </div>
+        </div>
+    </div>
+
+    <!-- Board -->
+    <div class="board-container" id="board"></div>
+
+    <!-- Share Modal -->
+    <div class="modal" id="shareModal">
+        <div class="modal-content">
+            <div class="modal-header">📤 SHARE BOARD</div>
+            <p style="color: rgba(224, 224, 255, 0.8); margin-bottom: 16px; font-size: 13px;">
+                Share this link with your team members. Everyone with the link will see the same board in real-time.
+            </p>
+            <div class="link-input">
+                <input type="text" class="link-input-field" id="shareLink" readonly>
+                <button class="link-copy-btn" id="copyLinkBtn">COPY</button>
+            </div>
+            <div style="margin-top: 20px;">
+                <button class="btn btn-primary" onclick="closeModal('shareModal')" style="width: 100%;">CLOSE</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content">
+            <div class="modal-header">⚙️ SETTINGS</div>
+            
+            <div class="modal-field">
+                <label class="modal-label">Board Name</label>
+                <input type="text" class="modal-input" id="boardName">
+            </div>
+
+            <div class="modal-field">
+                <label class="modal-label">Team Members</label>
+                <input type="text" class="modal-input" id="teamMembers" placeholder="Comma separated names">
+            </div>
+
+            <div class="modal-field">
+                <label class="modal-label">WIP Limits</label>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div>
+                        <label class="modal-label" style="font-size: 10px;">TO DO</label>
+                        <input type="number" class="modal-input" id="wipToDo" value="0" min="0">
+                    </div>
+                    <div>
+                        <label class="modal-label" style="font-size: 10px;">IN PROGRESS</label>
+                        <input type="number" class="modal-input" id="wipInProgress" value="5" min="0">
+                    </div>
+                    <div>
+                        <label class="modal-label" style="font-size: 10px;">REVIEW</label>
+                        <input type="number" class="modal-input" id="wipReview" value="3" min="0">
+                    </div>
+                    <div>
+                        <label class="modal-label" style="font-size: 10px;">DONE</label>
+                        <input type="number" class="modal-input" id="wipDone" value="0" min="0">
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn btn-primary" id="saveSettingsBtn">SAVE</button>
+                <button class="btn" onclick="closeModal('settingsModal')">CANCEL</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Task Modal -->
+    <div class="modal" id="editTaskModal">
+        <div class="modal-content">
+            <div class="modal-header">✏️ EDIT TASK</div>
+            
+            <div class="modal-field">
+                <label class="modal-label">Task Title</label>
+                <input type="text" class="modal-input" id="editTaskTitle">
+            </div>
+
+            <div class="modal-field">
+                <label class="modal-label">Description</label>
+                <textarea class="modal-input modal-textarea" id="editTaskDescription"></textarea>
+            </div>
+
+            <div class="modal-field">
+                <label class="modal-label">Assignee</label>
+                <input type="text" class="modal-input" id="editTaskAssignee">
+            </div>
+
+            <div class="modal-field">
+                <label class="modal-label">Priority</label>
+                <div class="select-group" id="editTaskPriorityGroup">
+                    <button class="select-option" data-priority="high">🔴 HIGH</button>
+                    <button class="select-option" data-priority="medium">🟠 MEDIUM</button>
+                    <button class="select-option" data-priority="low">⚫ LOW</button>
+                </div>
+            </div>
+
+            <div class="modal-field">
+                <label class="modal-label">Tags (comma separated)</label>
+                <input type="text" class="modal-input" id="editTaskTags">
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn btn-primary" id="saveTaskBtn">SAVE</button>
+                <button class="btn btn-danger" id="deleteTaskBtn">DELETE</button>
+                <button class="btn" onclick="closeModal('editTaskModal')">CANCEL</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+  import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyAWzEzco58WxRhkqKGNqlNtzLxf1mZkGYo",
+    authDomain: "kanban-47ad0.firebaseapp.com",
+    projectId: "kanban-47ad0",
+    storageBucket: "kanban-47ad0.firebasestorage.app",
+    messagingSenderId: "1067597337477",
+    appId: "1:1067597337477:web:246600773119f07fb0aaec"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // Make global
+  window.db = db;
+</script>
+        
+    <script src="script.js"></script>
+</body>
+</html>
