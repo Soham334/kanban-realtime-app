@@ -23,7 +23,7 @@ class KanbanBoard {
         this.settings = {
             boardName: 'Kanban Board',
             teamMembers: ['Coach A', 'Coach B', 'Coach C', 'Instructor'],
-            wipLimits: { todo: 0, inprogress: 5, review: 3, done: 0 }
+            wipLimits: { todo: 0, inprogress: 3, review: 2, done: 0 }
         };
         this.editingTaskId = null;
         this.newTaskColumn = null;
@@ -361,16 +361,22 @@ class KanbanBoard {
         const columnTasks = Object.values(this.tasks).filter(t => t.column === columnId);
         const wipLimit = this.settings.wipLimits[columnId] || 0;
         const isAtLimit = wipLimit > 0 && columnTasks.length >= wipLimit;
+        if (isAtLimit) {
+            columnDiv.classList.add('column-full');
+        }
 
         // Header
         const header = document.createElement('div');
+        const columnTitleText = wipLimit > 0
+            ? `${this.columnNames[columnId]} (${columnTasks.length} / ${wipLimit})`
+            : `${this.columnNames[columnId]} (${columnTasks.length})`;
         header.className = 'column-header';
         header.innerHTML = `
             <div class="column-title">
                 <div class="glow-dot"></div>
-                ${this.columnNames[columnId]}
+                ${columnTitleText}
             </div>
-            ${wipLimit > 0 ? `<div class="wip-badge ${isAtLimit ? 'warning' : ''}">${columnTasks.length}/${wipLimit}</div>` : ''}
+            ${wipLimit > 0 ? `<div class="wip-badge ${isAtLimit ? 'warning' : ''}">${columnTasks.length} / ${wipLimit}</div>` : ''}
         `;
 
         // Tasks Container
@@ -486,7 +492,17 @@ class KanbanBoard {
         container.addEventListener('dragover', (e) => {
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
-            container.style.borderTop = '4px solid #ffd700';
+
+            const taskId = e.dataTransfer.getData('taskId');
+            const targetColumn = container.dataset.column;
+            const sourceColumn = this.tasks[taskId]?.column;
+            const wipCheck = this.checkWIPLimit(targetColumn, taskId);
+
+            if (taskId && sourceColumn && sourceColumn !== targetColumn && !wipCheck.allowed) {
+                container.style.borderTop = '4px solid #d32f2f';
+            } else {
+                container.style.borderTop = '4px solid #ffd700';
+            }
         });
 
         container.addEventListener('dragleave', () => {
@@ -500,11 +516,10 @@ class KanbanBoard {
             const newColumn = container.dataset.column;
 
             if (this.tasks[taskId]) {
-                const wipLimit = this.settings.wipLimits[newColumn] || 0;
-                const columnTasks = Object.values(this.tasks).filter(t => t.column === newColumn && t.id !== taskId);
-
-                if (wipLimit > 0 && columnTasks.length >= wipLimit) {
-                    this.showNotification(`❌ WIP LIMIT: "${this.columnNames[newColumn]}" is at capacity (${wipLimit} tasks)`);
+                const wipCheck = this.checkWIPLimit(newColumn, taskId);
+                if (!wipCheck.allowed) {
+                    this.triggerWIPLimitFeedback(newColumn);
+                    this.showNotification('WIP limit reached');
                     return;
                 }
 
@@ -616,6 +631,14 @@ class KanbanBoard {
                 blocked: false,
                 createdAt: Date.now()
             };
+
+            const wipCheck = this.checkWIPLimit(this.tasks[newTaskId].column, newTaskId);
+            if (!wipCheck.allowed) {
+                delete this.tasks[newTaskId];
+                this.triggerWIPLimitFeedback(this.newTaskColumn || 'todo');
+                this.showNotification('WIP limit reached');
+                return;
+            }
         }
 
         this.saveToStorage();
@@ -702,8 +725,8 @@ class KanbanBoard {
         if (boardNameInput) boardNameInput.value = this.settings.boardName;
         if (teamMembersInput) teamMembersInput.value = this.settings.teamMembers.join(', ');
         if (wipToDo) wipToDo.value = this.settings.wipLimits.todo || 0;
-        if (wipInProgress) wipInProgress.value = this.settings.wipLimits.inprogress || 5;
-        if (wipReview) wipReview.value = this.settings.wipLimits.review || 3;
+        if (wipInProgress) wipInProgress.value = this.settings.wipLimits.inprogress || 3;
+        if (wipReview) wipReview.value = this.settings.wipLimits.review || 2;
         if (wipDone) wipDone.value = this.settings.wipLimits.done || 0;
 
         const modal = document.getElementById('settingsModal');
@@ -722,8 +745,8 @@ class KanbanBoard {
         this.settings.teamMembers = teamMembersInput ? teamMembersInput.value.split(',').map(m => m.trim()).filter(m => m) : [];
         this.settings.wipLimits = {
             todo: parseInt(wipToDo?.value) || 0,
-            inprogress: parseInt(wipInProgress?.value) || 5,
-            review: parseInt(wipReview?.value) || 3,
+            inprogress: parseInt(wipInProgress?.value) || 3,
+            review: parseInt(wipReview?.value) || 2,
             done: parseInt(wipDone?.value) || 0
         };
 
@@ -786,6 +809,40 @@ class KanbanBoard {
         const modal = document.getElementById(modalId);
         if (modal) modal.classList.remove('active');
     }
+
+    getColumnTaskCount(columnId, excludeTaskId = null) {
+        return Object.values(this.tasks).filter((task) => {
+            if (excludeTaskId && task.id === excludeTaskId) return false;
+            return task.column === columnId;
+        }).length;
+    }
+
+    checkWIPLimit(columnId, excludeTaskId = null) {
+        const limit = this.settings.wipLimits[columnId] || 0;
+        const count = this.getColumnTaskCount(columnId, excludeTaskId);
+
+        if (limit === 0) {
+            return { allowed: true, count, limit };
+        }
+
+        return {
+            allowed: count < limit,
+            count,
+            limit
+        };
+    }
+
+    triggerWIPLimitFeedback(columnId) {
+        const column = document.querySelector(`.column[data-column="${columnId}"]`);
+        if (!column) return;
+
+        column.classList.remove('wip-limit-reached');
+        column.classList.add('wip-limit-reached');
+
+        setTimeout(() => {
+            column.classList.remove('wip-limit-reached');
+        }, 450);
+    }
 }
 
 // Global close modal function
@@ -799,29 +856,4 @@ let kanban;
 document.addEventListener('DOMContentLoaded', () => {
     kanban = new KanbanBoard();
 
-});
-function getBoardId() {
-  let id = location.hash.replace("#", "");
-  if (!id) {
-    id = "board-" + Math.random().toString(36).substr(2, 6);
-    location.hash = id;
-  }
-  return id;
-}
-
-const boardId = getBoardId();
-async function saveBoard(data) {
-  await setDoc(doc(window.db, "boards", boardId), data);
-}
-
-function listenBoard(callback) {
-  onSnapshot(doc(window.db, "boards", boardId), (docSnap) => {
-    if (docSnap.exists()) {
-      callback(docSnap.data());
-    }
-  });
-}
-
-listenBoard((data) => {
-  renderBoard(data); // your existing function
 });

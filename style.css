@@ -328,6 +328,25 @@ html {
     box-shadow: 0 24px 48px rgba(0, 0, 0, 0.08);
 }
 
+.column.column-full {
+    border-color: #d32f2f;
+    box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.22), 0 10px 24px rgba(211, 47, 47, 0.18);
+}
+
+.column.wip-limit-reached {
+    border-color: #d32f2f;
+    box-shadow: 0 0 0 4px rgba(211, 47, 47, 0.35), 0 16px 30px rgba(211, 47, 47, 0.25);
+    animation: wip-shake 0.35s ease-in-out;
+}
+
+@keyframes wip-shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-6px); }
+    40% { transform: translateX(6px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
+}
+
 .column-header {
     padding: 28px 24px;
     border-bottom: 3px solid #1a1a1a;
