@@ -874,3 +874,32 @@ document.addEventListener('DOMContentLoaded', () => {
     kanban = new KanbanBoard();
 
 });
+
+function getBoardId() {
+  let id = window.location.hash.replace("#", "");
+
+  if (!id) {
+    id = Math.random().toString(36).substr(2, 8);
+    window.location.hash = id;
+  }
+
+  return id;
+}
+
+const boardId = getBoardId();
+
+async function saveBoard(data) {
+  await setDoc(doc(window.db, "boards", boardId), data);
+}
+
+function listenBoard(callback) {
+  onSnapshot(doc(window.db, "boards", boardId), (docSnap) => {
+    if (docSnap.exists()) {
+      callback(docSnap.data());
+    }
+  });
+}
+function shareBoard() {
+  navigator.clipboard.writeText(window.location.href);
+  alert("Link copied 🚀");
+}
