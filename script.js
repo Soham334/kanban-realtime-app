@@ -319,7 +319,7 @@ class KanbanBoard {
         });
         if (deleteTaskBtn) deleteTaskBtn.addEventListener('click', (e) => {
             e.preventDefault();
-            this.deleteTask();
+            this.deleteTask(this.editingTaskId);
         });
 
         // Priority selector in edit modal
@@ -467,11 +467,22 @@ class KanbanBoard {
         editBtn.textContent = '✏️ EDIT';
         editBtn.addEventListener('click', (e) => {
             e.preventDefault();
+            e.stopPropagation();
             this.editTask(task.id);
+        });
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'task-btn danger-btn';
+        deleteBtn.textContent = '🗑️ DELETE';
+        deleteBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.deleteTask(task.id);
         });
 
         actions.appendChild(blockBtn);
         actions.appendChild(editBtn);
+        actions.appendChild(deleteBtn);
         card.appendChild(actions);
 
         // Drag events
@@ -648,17 +659,23 @@ class KanbanBoard {
         this.showNotification('✓ Task saved successfully!');
     }
 
-    deleteTask() {
-        if (!this.editingTaskId) return;
+    deleteTask(taskId = this.editingTaskId) {
+        if (!taskId || !this.tasks[taskId]) return;
 
-        if (confirm('Are you sure you want to delete this task?')) {
-            delete this.tasks[this.editingTaskId];
-            this.saveToStorage();
-            this.render();
-            this.updateMetrics();
+        const isConfirmed = confirm('Are you sure you want to delete this task?');
+        if (!isConfirmed) return;
+
+        delete this.tasks[taskId];
+
+        if (this.editingTaskId === taskId) {
+            this.editingTaskId = null;
             this.closeModal('editTaskModal');
-            this.showNotification('✓ Task deleted!');
         }
+
+        this.saveToStorage();
+        this.render();
+        this.updateMetrics();
+        this.showNotification('Task deleted successfully');
     }
 
     toggleBlocked(taskId) {

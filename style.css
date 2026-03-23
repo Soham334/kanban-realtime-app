@@ -573,6 +573,15 @@ html {
     border-color: #d32f2f;
 }
 
+.task-btn.danger-btn {
+    border-color: #d32f2f;
+    color: #d32f2f;
+}
+
+.task-btn.danger-btn::before {
+    background: #d32f2f;
+}
+
 /* ============== ADD TASK FORM ============== */
 .add-task-form {
     padding: 24px;
